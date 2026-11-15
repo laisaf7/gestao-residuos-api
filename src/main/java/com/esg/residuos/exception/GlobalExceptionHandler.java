@@ -4,6 +4,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -58,8 +59,19 @@ public class GlobalExceptionHandler {
         return build(HttpStatus.BAD_REQUEST, ex.getMessage(), request, null);
     }
 
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ErrorResponse> handleNotReadable(HttpMessageNotReadableException ex, HttpServletRequest request) {
+        return build(HttpStatus.BAD_REQUEST, "Corpo da requisicao invalido ou mal formatado", request, null);
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGeneric(Exception ex, HttpServletRequest request) {
+        // Erros do proprio Spring MVC (rota inexistente, metodo errado...) ja sabem seu status: nao sao erro 500
+        if (ex instanceof org.springframework.web.ErrorResponse spring) {
+            HttpStatus status = HttpStatus.valueOf(spring.getStatusCode().value());
+            String message = status == HttpStatus.NOT_FOUND ? "Rota nao encontrada" : spring.getBody().getDetail();
+            return build(status, message, request, null);
+        }
         return build(HttpStatus.INTERNAL_SERVER_ERROR, "Erro interno inesperado: " + ex.getMessage(), request, null);
     }
 
