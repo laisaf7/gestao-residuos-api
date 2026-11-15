@@ -61,6 +61,7 @@ public class SecurityConfig {
                 .requestMatchers("/actuator/health", "/error").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/**").authenticated()
                 .requestMatchers(HttpMethod.POST, "/api/carteira/**").authenticated()
+                .requestMatchers(HttpMethod.POST, "/api/artigos").authenticated()
                 .requestMatchers(HttpMethod.POST, "/api/**").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.PUT, "/api/**").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.DELETE, "/api/**").hasRole("ADMIN")
