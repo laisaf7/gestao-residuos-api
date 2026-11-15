@@ -16,6 +16,7 @@ public class ArtigoResponse {
     private String conteudo;
     private String autor;
     private LocalDateTime dataCriacao;
+    private LocalDateTime dataAtualizacao;
     /** Quando true, a foto esta em GET /api/artigos/{id}/imagem. */
     private boolean temImagem;
 }

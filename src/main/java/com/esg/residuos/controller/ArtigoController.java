@@ -42,4 +42,16 @@ public class ArtigoController {
     public ArtigoResponse criar(@Valid @RequestBody ArtigoRequest request, Principal principal) {
         return service.criar(principal.getName(), request);
     }
+
+    /** Apenas quem publicou (checado em ArtigoService). */
+    @PutMapping("/{id}")
+    public ArtigoResponse editar(@PathVariable Long id, @Valid @RequestBody ArtigoRequest request, Principal principal) {
+        return service.editar(id, principal.getName(), request);
+    }
+
+    @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void excluir(@PathVariable Long id, Principal principal) {
+        service.excluir(id, principal.getName());
+    }
 }

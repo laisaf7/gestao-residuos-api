@@ -6,9 +6,11 @@ import com.esg.residuos.dto.response.ArtigoResponse;
 import com.esg.residuos.exception.ResourceNotFoundException;
 import com.esg.residuos.repository.ArtigoRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.Base64;
 import java.util.List;
 
@@ -39,14 +41,47 @@ public class ArtigoService {
                 .autor(autor)
                 .imagem(lerJpeg(request.getImagemBase64()))
                 .build());
+        return toResponse(artigo);
+    }
+
+    @Transactional
+    public ArtigoResponse editar(Long id, String usuario, ArtigoRequest request) {
+        Artigo artigo = doAutor(id, usuario);
+        artigo.setTitulo(request.getTitulo().trim());
+        artigo.setMaterial(request.getMaterial());
+        artigo.setConteudo(request.getConteudo().trim());
+        byte[] novaFoto = lerJpeg(request.getImagemBase64());
+        if (novaFoto != null) artigo.setImagem(novaFoto);
+        else if (request.isRemoverImagem()) artigo.setImagem(null);
+        artigo.setDataAtualizacao(LocalDateTime.now());
+        return toResponse(artigo);
+    }
+
+    @Transactional
+    public void excluir(Long id, String usuario) {
+        repository.delete(doAutor(id, usuario));
+    }
+
+    /** So quem publicou pode editar ou excluir. */
+    private Artigo doAutor(Long id, String usuario) {
+        Artigo artigo = repository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Artigo nao encontrado"));
+        if (!artigo.getAutor().equals(usuario)) {
+            throw new AccessDeniedException("Apenas quem publicou pode alterar este artigo");
+        }
+        return artigo;
+    }
+
+    private ArtigoResponse toResponse(Artigo a) {
         return ArtigoResponse.builder()
-                .id(artigo.getId())
-                .titulo(artigo.getTitulo())
-                .material(artigo.getMaterial())
-                .conteudo(artigo.getConteudo())
-                .autor(artigo.getAutor())
-                .dataCriacao(artigo.getDataCriacao())
-                .temImagem(artigo.getImagem() != null)
+                .id(a.getId())
+                .titulo(a.getTitulo())
+                .material(a.getMaterial())
+                .conteudo(a.getConteudo())
+                .autor(a.getAutor())
+                .dataCriacao(a.getDataCriacao())
+                .dataAtualizacao(a.getDataAtualizacao())
+                .temImagem(a.getImagem() != null)
                 .build();
     }
 

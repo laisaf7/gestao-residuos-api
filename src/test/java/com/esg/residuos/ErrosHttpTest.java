@@ -32,6 +32,15 @@ class ErrosHttpTest {
     }
 
     @Test
+    void usuarioComumPodeChamarEdicaoEExclusao() throws Exception {
+        // Passa pela seguranca (nao e 403) e chega no service, que responde 404 por nao existir
+        mvc.perform(put("/api/artigos/999").contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"titulo\":\"a\",\"material\":\"Papel\",\"conteudo\":\"b\"}"))
+                .andExpect(status().isNotFound());
+        mvc.perform(delete("/api/artigos/999")).andExpect(status().isNotFound());
+    }
+
+    @Test
     void jsonMalFormatadoDa400() throws Exception {
         mvc.perform(post("/api/artigos").contentType(MediaType.APPLICATION_JSON).content("{quebrado"))
                 .andExpect(status().isBadRequest());

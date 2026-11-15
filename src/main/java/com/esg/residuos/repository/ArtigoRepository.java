@@ -12,7 +12,7 @@ import java.util.Optional;
 public interface ArtigoRepository extends JpaRepository<Artigo, Long> {
 
     String PROJECAO = "select new com.esg.residuos.dto.response.ArtigoResponse("
-            + "a.id, a.titulo, a.material, a.conteudo, a.autor, a.dataCriacao, "
+            + "a.id, a.titulo, a.material, a.conteudo, a.autor, a.dataCriacao, a.dataAtualizacao, "
             + "case when a.imagem is null then false else true end) from Artigo a ";
 
     @Query(PROJECAO + "order by a.dataCriacao desc, a.id desc")

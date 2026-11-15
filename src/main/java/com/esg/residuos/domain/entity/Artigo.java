@@ -36,6 +36,9 @@ public class Artigo {
     @Column(name = "DATA_CRIACAO", nullable = false)
     private LocalDateTime dataCriacao = LocalDateTime.now();
 
+    @Column(name = "DATA_ATUALIZACAO")
+    private LocalDateTime dataAtualizacao;
+
     /** Foto JPEG. A listagem usa projecao (ArtigoRepository) para nao carregar estes bytes. */
     @Column(name = "IMAGEM")
     private byte[] imagem;

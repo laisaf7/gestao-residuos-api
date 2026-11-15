@@ -62,6 +62,9 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/api/**").authenticated()
                 .requestMatchers(HttpMethod.POST, "/api/carteira/**").authenticated()
                 .requestMatchers(HttpMethod.POST, "/api/artigos").authenticated()
+                // Dono do artigo checado em ArtigoService
+                .requestMatchers(HttpMethod.PUT, "/api/artigos/*").authenticated()
+                .requestMatchers(HttpMethod.DELETE, "/api/artigos/*").authenticated()
                 .requestMatchers(HttpMethod.POST, "/api/**").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.PUT, "/api/**").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.DELETE, "/api/**").hasRole("ADMIN")
