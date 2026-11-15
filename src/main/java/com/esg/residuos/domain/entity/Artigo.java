@@ -35,4 +35,8 @@ public class Artigo {
     @Builder.Default
     @Column(name = "DATA_CRIACAO", nullable = false)
     private LocalDateTime dataCriacao = LocalDateTime.now();
+
+    /** Foto JPEG. A listagem usa projecao (ArtigoRepository) para nao carregar estes bytes. */
+    @Column(name = "IMAGEM")
+    private byte[] imagem;
 }
