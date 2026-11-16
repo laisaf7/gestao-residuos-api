@@ -11,6 +11,9 @@ novembro de 2026 o banco é **PostgreSQL** (veja "Mudança de Oracle para Postgr
 - Alertas automáticos (geração de coleta) quando um ponto atinge o limite de ocupação.
 - Notificações automáticas de destinação incorreta e de conclusão de coleta.
 - Indicadores consolidados de sustentabilidade (taxa de descarte correto, kg reciclado, etc.).
+- Artigos de reaproveitamento ("Ideias"): passo a passo para transformar recicláveis em
+  produtos novos, com foto e filtro por material; qualquer usuário publica, o autor
+  edita e exclui, o `ADMIN` modera (veja "Artigos de reaproveitamento").
 - Autenticação via **JWT** com Spring Security (perfis `ADMIN` e `USER`).
 - Validação de dados com Bean Validation e tratamento global de exceções.
 - Migrações de banco de dados com **Flyway**.
@@ -63,6 +66,34 @@ cron-job.org para o Render não "dormir". Variáveis no Render: `DB_URL`
 (formato `jdbc:postgresql://<host>/<banco>?sslmode=require`), `DB_USERNAME`,
 `DB_PASSWORD` e `JWT_SECRET`.
 
+## Artigos de reaproveitamento (novembro de 2026)
+
+Base da aba **Ideias** do app EcoCiclo: artigos que ensinam a transformar
+material reciclável (ou que viraria lixo, como uma calça jeans) em outro produto.
+
+| Migração | O que faz |
+|---|---|
+| `V5__artigos.sql` | Tabela `ARTIGO` e 6 artigos de exemplo (um por material), com autor `EcoCiclo` |
+| `V6__artigo_imagem.sql` | Coluna `IMAGEM` (`BYTEA`) e as fotos dos 6 exemplos embutidas em Base64 (por isso o arquivo tem ~530 KB) |
+| `V7__artigo_atualizacao.sql` | Coluna `DATA_ATUALIZACAO`, preenchida a cada edição |
+
+**Regras:**
+
+- Materiais aceitos: `Plástico`, `Papel`, `Vidro`, `Metal`, `Tecido`, `Madeira`, `Outros`.
+- Foto opcional, enviada em `imagemBase64` no corpo do POST/PUT. Só JPEG (a API confere
+  os bytes iniciais) e no máximo 1 MB. O app reduz a foto para 1280 px antes de enviar.
+- Na edição, sem `imagemBase64` a foto atual é mantida; `"removerImagem": true` apaga a foto.
+- Só o autor edita. O autor ou um `ADMIN` exclui; outro usuário recebe 403.
+- A listagem usa uma projeção JPQL (`ArtigoRepository`) para não carregar os bytes das
+  fotos; cada foto é baixada à parte em `/api/artigos/{id}/imagem`, com cache de 7 dias
+  no celular. O app acrescenta `?v=` com a data da última edição para não mostrar a foto antiga.
+- As fotos dos exemplos têm licença livre (CC BY, CC BY-SA ou domínio público). O
+  crédito, com autor, licença e link, está no fim do texto de cada artigo.
+
+Junto com essa entrega, o `GlobalExceptionHandler` passou a manter o status dos
+erros do próprio Spring: rota inexistente responde 404, método errado 405 e
+JSON mal formatado 400 (antes todos viravam 500).
+
 ## Estrutura de pacotes
 
 ```
@@ -99,6 +130,11 @@ src/main/java/com/esg/residuos
 | GET | `/api/notificacoes` | USER/ADMIN | Lista notificações (filtro `?naoLidas=true`) |
 | PUT | `/api/notificacoes/{id}/marcar-lida` | ADMIN | Marca notificação como lida |
 | GET | `/api/indicadores-sustentabilidade` | USER/ADMIN | Indicadores ESG consolidados |
+| GET | `/api/artigos` | USER/ADMIN | Lista artigos de reaproveitamento, sem as fotos (filtro opcional `?material=`) |
+| GET | `/api/artigos/{id}/imagem` | USER/ADMIN | Foto JPEG do artigo (404 se não tiver) |
+| POST | `/api/artigos` | USER/ADMIN | Publica um artigo; o autor é o usuário do token |
+| PUT | `/api/artigos/{id}` | Autor | Edita o artigo (texto, material, trocar ou remover a foto) |
+| DELETE | `/api/artigos/{id}` | Autor ou ADMIN | Exclui o artigo |
 
 Documentação interativa completa: `http://localhost:8080/swagger-ui.html`.
 
@@ -110,7 +146,7 @@ desenvolvimento — troque as senhas em um ambiente real):
 | username | senha | perfil |
 |---|---|---|
 | `admin` | `admin123` | ADMIN (leitura e escrita) |
-| `usuario` | `user123` | USER (somente leitura) |
+| `usuario` | `user123` | USER (leitura, carteira e os próprios artigos) |
 
 Fluxo: `POST /api/auth/login` com `{"username": "...", "password": "..."}`
 retorna um token JWT que deve ser enviado no cabeçalho
@@ -144,9 +180,16 @@ mvn spring-boot:run
 mvn test
 ```
 
-Inclui teste de contexto Spring e testes unitários (`DescarteServiceTest`)
-que validam a validação de descarte, geração de notificação de destinação
-incorreta e a geração automática de coleta ao cruzar o limite de ocupação.
+Inclui teste de contexto Spring e testes unitários:
+
+- `DescarteServiceTest`: validação de descarte, notificação de destinação
+  incorreta e geração automática de coleta ao cruzar o limite de ocupação.
+- `CarteiraServiceTest`: conversão de kg em EcoMoedas no resgate do QR, QR usado
+  duas vezes, descarte incorreto sem moedas, pagamento sem saldo e transferência.
+- `ArtigoServiceTest`: autor do artigo, validação da foto (JPEG/Base64) e quem
+  pode editar ou excluir (autor, outro usuário, admin).
+- `ErrosHttpTest`: status 404/405/400 nos erros do Spring e permissão de
+  `USER` para editar e excluir artigos.
 
 ## Collection do Postman
 
