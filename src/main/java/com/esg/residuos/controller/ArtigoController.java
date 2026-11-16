@@ -9,6 +9,7 @@ import org.springframework.http.CacheControl;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
@@ -49,9 +50,11 @@ public class ArtigoController {
         return service.editar(id, principal.getName(), request);
     }
 
+    /** Autor ou ADMIN. */
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void excluir(@PathVariable Long id, Principal principal) {
-        service.excluir(id, principal.getName());
+    public void excluir(@PathVariable Long id, Authentication auth) {
+        boolean admin = auth.getAuthorities().stream().anyMatch(a -> "ROLE_ADMIN".equals(a.getAuthority()));
+        service.excluir(id, auth.getName(), admin);
     }
 }

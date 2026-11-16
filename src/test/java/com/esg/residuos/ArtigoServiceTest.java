@@ -114,7 +114,7 @@ class ArtigoServiceTest {
 
         assertThatThrownBy(() -> service.editar(7L, "joao", edicao(null, false)))
                 .isInstanceOf(AccessDeniedException.class);
-        assertThatThrownBy(() -> service.excluir(7L, "joao"))
+        assertThatThrownBy(() -> service.excluir(7L, "joao", false))
                 .isInstanceOf(AccessDeniedException.class);
         assertThat(artigo.getTitulo()).isEqualTo("Antigo");
         verify(repository, never()).delete(any());
@@ -123,13 +123,27 @@ class ArtigoServiceTest {
     @Test
     void donoExclui() {
         Artigo artigo = artigoDaMaria();
-        service.excluir(7L, "maria");
+        service.excluir(7L, "maria", false);
         verify(repository).delete(artigo);
+    }
+
+    @Test
+    void adminExcluiArtigoDeOutroUsuario() {
+        Artigo artigo = artigoDaMaria();
+        service.excluir(7L, "admin", true);
+        verify(repository).delete(artigo);
+    }
+
+    @Test
+    void adminNaoEditaArtigoDeOutroUsuario() {
+        artigoDaMaria();
+        assertThatThrownBy(() -> service.editar(7L, "admin", edicao(null, false)))
+                .isInstanceOf(AccessDeniedException.class);
     }
 
     @Test
     void artigoInexistenteDa404() {
         when(repository.findById(99L)).thenReturn(Optional.empty());
-        assertThatThrownBy(() -> service.excluir(99L, "maria")).isInstanceOf(ResourceNotFoundException.class);
+        assertThatThrownBy(() -> service.excluir(99L, "maria", false)).isInstanceOf(ResourceNotFoundException.class);
     }
 }

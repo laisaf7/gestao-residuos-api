@@ -57,19 +57,24 @@ public class ArtigoService {
         return toResponse(artigo);
     }
 
+    /** Autor exclui o proprio artigo; admin exclui qualquer um (moderacao). */
     @Transactional
-    public void excluir(Long id, String usuario) {
-        repository.delete(doAutor(id, usuario));
+    public void excluir(Long id, String usuario, boolean admin) {
+        repository.delete(admin ? buscar(id) : doAutor(id, usuario));
     }
 
     /** So quem publicou pode editar ou excluir. */
     private Artigo doAutor(Long id, String usuario) {
-        Artigo artigo = repository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Artigo nao encontrado"));
+        Artigo artigo = buscar(id);
         if (!artigo.getAutor().equals(usuario)) {
             throw new AccessDeniedException("Apenas quem publicou pode alterar este artigo");
         }
         return artigo;
+    }
+
+    private Artigo buscar(Long id) {
+        return repository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Artigo nao encontrado"));
     }
 
     private ArtigoResponse toResponse(Artigo a) {
