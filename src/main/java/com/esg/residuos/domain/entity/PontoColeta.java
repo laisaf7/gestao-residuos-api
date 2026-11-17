@@ -100,4 +100,9 @@ public class PontoColeta {
     @Convert(converter = SimNaoConverter.class)
     @Column(name = "ATIVO", nullable = false, length = 1)
     private Boolean ativo = Boolean.TRUE;
+
+    /** Preenchido quando o ponto e o atelie de um artesao; nulo = ecoponto. */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "ID_USUARIO_ARTESAO", unique = true)
+    private Usuario artesao;
 }

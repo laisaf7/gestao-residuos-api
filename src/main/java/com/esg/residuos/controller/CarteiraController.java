@@ -13,6 +13,7 @@ import com.esg.residuos.service.ComercioService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
@@ -43,11 +44,12 @@ public class CarteiraController {
         return carteiraService.pagar(principal.getName(), request);
     }
 
-    /** Apenas ADMIN (operador do ecoponto), pela regra geral de POST em SecurityConfig. */
+    /** ADMIN (operador do ecoponto) ou ARTESAO (so no proprio atelie). */
     @PostMapping("/entregas-qr")
     @ResponseStatus(HttpStatus.CREATED)
-    public EntregaQrResponse gerarQr(@Valid @RequestBody EntregaQrRequest request) {
-        return carteiraService.gerarQr(request);
+    public EntregaQrResponse gerarQr(@Valid @RequestBody EntregaQrRequest request, Authentication auth) {
+        boolean artesao = auth.getAuthorities().stream().anyMatch(a -> "ROLE_ARTESAO".equals(a.getAuthority()));
+        return carteiraService.gerarQr(request, artesao ? auth.getName() : null);
     }
 
     @GetMapping("/comercios")

@@ -43,6 +43,11 @@ public class PontoColetaService {
     }
 
     public PontoColetaResponse criar(PontoColetaRequest request) {
+        return toResponse(repository.save(montar(request)));
+    }
+
+    /** Tambem usado no cadastro de artesao (ArtesaoService). */
+    PontoColeta montar(PontoColetaRequest request) {
         TipoResiduo tipoResiduo = tipoResiduoService.buscarEntidade(request.getIdTipoResiduo());
         PontoColeta entidade = PontoColeta.builder()
                 .tipoResiduo(tipoResiduo)
@@ -63,7 +68,7 @@ public class PontoColetaService {
                 .status(StatusPonto.DISPONIVEL)
                 .ativo(Boolean.TRUE)
                 .build();
-        return toResponse(repository.save(entidade));
+        return entidade;
     }
 
     public PontoColetaResponse atualizar(Long id, PontoColetaRequest request) {
@@ -113,6 +118,7 @@ public class PontoColetaService {
                 .dataInstalacao(p.getDataInstalacao())
                 .dataUltimaColeta(p.getDataUltimaColeta())
                 .ativo(p.getAtivo())
+                .artesao(p.getArtesao() != null)
                 .build();
     }
 }

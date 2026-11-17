@@ -65,6 +65,16 @@ public class SecurityConfig {
                 // Dono do artigo checado em ArtigoService
                 .requestMatchers(HttpMethod.PUT, "/api/artigos/*").authenticated()
                 .requestMatchers(HttpMethod.DELETE, "/api/artigos/*").authenticated()
+                // Papel USER checado em ArtesaoService
+                .requestMatchers(HttpMethod.POST, "/api/artesao").authenticated()
+                .requestMatchers(HttpMethod.POST, "/api/artesao/**").hasRole("ARTESAO")
+                // Artesao so gera QR do proprio atelie (checado em CarteiraService)
+                .requestMatchers(HttpMethod.POST, "/api/entregas-qr").hasAnyRole("ADMIN", "ARTESAO")
+                .requestMatchers(HttpMethod.POST, "/api/produtos/*/compras").authenticated()
+                .requestMatchers(HttpMethod.POST, "/api/produtos").hasRole("ARTESAO")
+                // Dono do produto (ou admin, na exclusao) checado em ProdutoService
+                .requestMatchers(HttpMethod.PUT, "/api/produtos/*").hasRole("ARTESAO")
+                .requestMatchers(HttpMethod.DELETE, "/api/produtos/*").authenticated()
                 .requestMatchers(HttpMethod.POST, "/api/**").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.PUT, "/api/**").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.DELETE, "/api/**").hasRole("ADMIN")

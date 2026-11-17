@@ -10,6 +10,7 @@ import com.esg.residuos.exception.BusinessException;
 import com.esg.residuos.exception.ResourceNotFoundException;
 import com.esg.residuos.repository.*;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -46,8 +47,12 @@ public class CarteiraService {
                 .build();
     }
 
-    public EntregaQrResponse gerarQr(EntregaQrRequest request) {
+    /** @param artesao username quando quem gera e um artesao (so pode no proprio atelie); null para o admin. */
+    public EntregaQrResponse gerarQr(EntregaQrRequest request, String artesao) {
         PontoColeta ponto = pontoColetaService.buscarEntidade(request.getIdPontoColeta());
+        if (artesao != null && (ponto.getArtesao() == null || !ponto.getArtesao().getUsername().equalsIgnoreCase(artesao))) {
+            throw new AccessDeniedException("O artesao so registra entregas no proprio atelie");
+        }
         TipoResiduo tipo = tipoResiduoService.buscarEntidade(request.getIdTipoResiduo());
         if (!ponto.getTipoResiduo().getId().equals(tipo.getId())) {
             throw new BusinessException("O ponto '" + ponto.getNome() + "' nao aceita o residuo " + tipo.getNome());

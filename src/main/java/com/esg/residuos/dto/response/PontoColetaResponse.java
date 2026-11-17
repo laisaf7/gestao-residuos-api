@@ -36,4 +36,6 @@ public class PontoColetaResponse {
     private LocalDate dataInstalacao;
     private LocalDate dataUltimaColeta;
     private Boolean ativo;
+    /** true = atelie de artesao (capacidade menor que um ecoponto). */
+    private Boolean artesao;
 }

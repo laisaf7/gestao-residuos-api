@@ -137,7 +137,8 @@ public class DescarteService {
             // Atividade 3: gera coleta automatica quando o limite e cruzado
             boolean cruzouLimiteAgora = percentualAnterior.compareTo(ponto.getLimiteAlertaPercentual()) < 0
                     && novoPercentual.compareTo(ponto.getLimiteAlertaPercentual()) >= 0;
-            if (cruzouLimiteAgora) {
+            // Atelie de artesao nao recebe caminhao: o proprio artesao usa o material e esvazia o ponto
+            if (cruzouLimiteAgora && ponto.getArtesao() == null) {
                 Coleta coleta = Coleta.builder()
                         .pontoColeta(ponto)
                         .dataSolicitacao(LocalDate.now())

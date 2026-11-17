@@ -94,6 +94,21 @@ Junto com essa entrega, o `GlobalExceptionHandler` passou a manter o status dos
 erros do próprio Spring: rota inexistente responde 404, método errado 405 e
 JSON mal formatado 400 (antes todos viravam 500).
 
+## Perfil artesão (novembro de 2026)
+
+Incentiva quem cria produtos com material reciclado. O artesão:
+
+- vira **ponto de coleta** do material que usa: o ateliê é um `PONTO_COLETA` com
+  `ID_USUARIO_ARTESAO` preenchido e capacidade de até 100 kg (ecopontos têm centenas);
+- gera o QR das entregas **só no próprio ateliê** e esvazia o ponto quando usa o
+  material (ateliê não gera coleta automática de caminhão);
+- vende **produtos** com preço em reais (vitrine) e, opcional, em EcoMoedas. A compra
+  no app debita o comprador (`COMPRA`, com código de retirada) e credita o artesão (`VENDA`).
+
+| Migração | O quê |
+|---|---|
+| `V8__artesao.sql` | Papel `ARTESAO`, coluna do artesão no ponto, tabela `PRODUTO`, tipos `COMPRA`/`VENDA` e a conta de demonstração `artesao` com um ateliê de plástico (50 kg) e 2 produtos |
+
 ## Estrutura de pacotes
 
 ```
@@ -130,6 +145,14 @@ src/main/java/com/esg/residuos
 | GET | `/api/notificacoes` | USER/ADMIN | Lista notificações (filtro `?naoLidas=true`) |
 | PUT | `/api/notificacoes/{id}/marcar-lida` | ADMIN | Marca notificação como lida |
 | GET | `/api/indicadores-sustentabilidade` | USER/ADMIN | Indicadores ESG consolidados |
+| POST | `/api/artesao` | USER | Vira artesão: cria o ateliê (corpo de ponto de coleta, até 100 kg) e devolve token novo |
+| GET | `/api/artesao/atelie` | ARTESAO | Ateliê de quem está logado (ocupação e status) |
+| POST | `/api/artesao/atelie/esvaziar` | ARTESAO | Zera a ocupação do ateliê |
+| POST | `/api/entregas-qr` | ADMIN ou ARTESAO | Gera o QR da pesagem; artesão só no próprio ateliê |
+| GET | `/api/produtos`, `/api/produtos/{id}/imagem` | Logado | Catálogo dos artesãos e foto do produto |
+| POST | `/api/produtos` | ARTESAO | Publica produto no próprio ateliê |
+| PUT / DELETE | `/api/produtos/{id}` | Artesão dono (DELETE também ADMIN) | Edita ou exclui produto |
+| POST | `/api/produtos/{id}/compras` | Logado | Compra com EcoMoedas e devolve o código de retirada |
 | GET | `/api/artigos` | USER/ADMIN | Lista artigos de reaproveitamento, sem as fotos (filtro opcional `?material=`) |
 | GET | `/api/artigos/{id}/imagem` | USER/ADMIN | Foto JPEG do artigo (404 se não tiver) |
 | POST | `/api/artigos` | USER/ADMIN | Publica um artigo; o autor é o usuário do token |
@@ -147,6 +170,7 @@ desenvolvimento — troque as senhas em um ambiente real):
 |---|---|---|
 | `admin` | `admin123` | ADMIN (leitura e escrita) |
 | `usuario` | `user123` | USER (leitura, carteira e os próprios artigos) |
+| `artesao` | `artesao123` | ARTESAO (tudo do USER + ateliê e produtos; criado na `V8`) |
 
 Fluxo: `POST /api/auth/login` com `{"username": "...", "password": "..."}`
 retorna um token JWT que deve ser enviado no cabeçalho
@@ -188,6 +212,10 @@ Inclui teste de contexto Spring e testes unitários:
   duas vezes, descarte incorreto sem moedas, pagamento sem saldo e transferência.
 - `ArtigoServiceTest`: autor do artigo, validação da foto (JPEG/Base64) e quem
   pode editar ou excluir (autor, outro usuário, admin).
+- `ArtesaoServiceTest`: cadastro troca o papel e cria o ateliê, limite de 100 kg,
+  esvaziar e QR só no próprio ateliê.
+- `ProdutoServiceTest`: compra move moedas do cliente para o artesão, saldo
+  insuficiente, compra do próprio produto, produto só em reais e dono do produto.
 - `ErrosHttpTest`: status 404/405/400 nos erros do Spring e permissão de
   `USER` para editar e excluir artigos.
 
