@@ -101,7 +101,8 @@ class ArtesaoServiceTest {
         EntregaQrRequest noAtelie = EntregaQrRequest.builder().idPontoColeta(5L).idTipoResiduo(2L).quantidadeKg(BigDecimal.ONE).build();
         EntregaQrRequest noEcoponto = EntregaQrRequest.builder().idPontoColeta(1L).idTipoResiduo(2L).quantidadeKg(BigDecimal.ONE).build();
 
-        assertThat(carteira.gerarQr(noAtelie, "bia").getMoedas()).isEqualByComparingTo("5");
+        // 1 kg x 5 moedas, +50% por ser atelie
+        assertThat(carteira.gerarQr(noAtelie, "bia").getMoedas()).isEqualByComparingTo("7.50");
         assertThatThrownBy(() -> carteira.gerarQr(noAtelie, "ana")).isInstanceOf(AccessDeniedException.class);
         assertThatThrownBy(() -> carteira.gerarQr(noEcoponto, "bia")).isInstanceOf(AccessDeniedException.class);
         assertThat(carteira.gerarQr(noEcoponto, null).getCodigo()).isNotBlank();

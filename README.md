@@ -108,6 +108,14 @@ Incentiva quem cria produtos com material reciclado. O artesão:
 | Migração | O quê |
 |---|---|
 | `V8__artesao.sql` | Papel `ARTESAO`, coluna do artesão no ponto, tabela `PRODUTO`, tipos `COMPRA`/`VENDA` e a conta de demonstração `artesao` com um ateliê de plástico (50 kg) e 2 produtos |
+| `V9__incentivo_atelie.sql` | Coluna `DESCONTO_DISPONIVEL` em `ENTREGA_QR`: cada entrega correta num ateliê vira um cupom |
+
+**Incentivo para entregar no ateliê** (`ArtesaoService.INCENTIVO_PERCENTUAL` = 50):
+
+- a entrega rende +50% de EcoMoedas (o QR já mostra o valor com bônus);
+- e vira um cupom de 50% de desconto em **uma** compra de produto daquele ateliê com
+  EcoMoedas. O artesão recebe o valor com desconto. `GET /api/carteira` devolve
+  `ateliesComDesconto` (ids dos ateliês onde a pessoa tem cupom).
 
 ## Estrutura de pacotes
 

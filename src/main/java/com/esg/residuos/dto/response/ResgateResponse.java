@@ -16,4 +16,6 @@ public class ResgateResponse {
     private boolean descarteCorreto;
     private BigDecimal moedasCreditadas;
     private BigDecimal saldo;
+    /** true = entrega em atelie: rendeu bonus e um cupom de desconto nos produtos de la. */
+    private boolean descontoAtelie;
 }

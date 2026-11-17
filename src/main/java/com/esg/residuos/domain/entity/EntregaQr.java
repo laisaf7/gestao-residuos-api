@@ -1,5 +1,7 @@
 package com.esg.residuos.domain.entity;
 
+import com.esg.residuos.domain.converter.SimNaoConverter;
+
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -46,4 +48,10 @@ public class EntregaQr {
 
     @Column(name = "DATA_RESGATE")
     private LocalDateTime dataResgate;
+
+    /** true = entrega no atelie de artesao cujo cupom de desconto ainda nao foi usado. */
+    @Builder.Default
+    @Convert(converter = SimNaoConverter.class)
+    @Column(name = "DESCONTO_DISPONIVEL", nullable = false, length = 1)
+    private Boolean descontoDisponivel = Boolean.FALSE;
 }

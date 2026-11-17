@@ -25,6 +25,17 @@ public class ArtesaoService {
     /** Atelie e menor que um ecoponto. */
     static final BigDecimal CAPACIDADE_MAXIMA_KG = new BigDecimal("100");
 
+    /** Incentivo de quem entrega no atelie: +50% de EcoMoedas e cupom de 50% num produto de la. */
+    public static final int INCENTIVO_PERCENTUAL = 50;
+
+    static BigDecimal multiplicadorBonus() {
+        return BigDecimal.ONE.add(BigDecimal.valueOf(INCENTIVO_PERCENTUAL, 2));
+    }
+
+    static BigDecimal multiplicadorDesconto() {
+        return BigDecimal.ONE.subtract(BigDecimal.valueOf(INCENTIVO_PERCENTUAL, 2));
+    }
+
     private final UsuarioRepository usuarioRepository;
     private final PontoColetaRepository pontoRepository;
     private final PontoColetaService pontoColetaService;

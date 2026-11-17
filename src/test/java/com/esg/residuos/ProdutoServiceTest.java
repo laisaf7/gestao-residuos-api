@@ -34,6 +34,7 @@ class ProdutoServiceTest {
     @Mock private PontoColetaRepository pontoRepository;
     @Mock private UsuarioRepository usuarioRepository;
     @Mock private TransacaoMoedaRepository transacaoRepository;
+    @Mock private EntregaQrRepository entregaQrRepository;
     @InjectMocks private ProdutoService service;
 
     private Usuario artesa;
@@ -69,6 +70,20 @@ class ProdutoServiceTest {
         verify(transacaoRepository, times(2)).save(salvas.capture());
         assertThat(salvas.getAllValues()).extracting(TransacaoMoeda::getTipo)
                 .containsExactly(TipoTransacao.VENDA, TipoTransacao.COMPRA);
+    }
+
+    @Test
+    void cupomDeQuemEntregouNoAtelieDaMetadeEESeGasta() {
+        EntregaQr entrega = EntregaQr.builder().id(3L).descontoDisponivel(true).build();
+        when(entregaQrRepository.findFirstByUsuarioResgateIdAndPontoColetaIdAndDescontoDisponivelOrderByIdAsc(2L, 5L, true))
+                .thenReturn(Optional.of(entrega));
+
+        TransacaoResponse t = service.comprar(7L, "ana");
+
+        assertThat(t.getValor()).isEqualByComparingTo("30.00");
+        assertThat(cliente.getSaldoEcoMoedas()).isEqualByComparingTo("70.00");
+        assertThat(artesa.getSaldoEcoMoedas()).isEqualByComparingTo("35.00");
+        assertThat(entrega.getDescontoDisponivel()).isFalse();
     }
 
     @Test

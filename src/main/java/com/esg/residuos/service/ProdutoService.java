@@ -1,5 +1,6 @@
 package com.esg.residuos.service;
 
+import com.esg.residuos.domain.entity.EntregaQr;
 import com.esg.residuos.domain.entity.PontoColeta;
 import com.esg.residuos.domain.entity.Produto;
 import com.esg.residuos.domain.entity.TransacaoMoeda;
@@ -10,6 +11,7 @@ import com.esg.residuos.dto.response.ProdutoResponse;
 import com.esg.residuos.dto.response.TransacaoResponse;
 import com.esg.residuos.exception.BusinessException;
 import com.esg.residuos.exception.ResourceNotFoundException;
+import com.esg.residuos.repository.EntregaQrRepository;
 import com.esg.residuos.repository.PontoColetaRepository;
 import com.esg.residuos.repository.ProdutoRepository;
 import com.esg.residuos.repository.TransacaoMoedaRepository;
@@ -20,8 +22,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 /** Catalogo de produtos dos artesaos e compra com EcoMoedas. */
@@ -34,6 +38,7 @@ public class ProdutoService {
     private final PontoColetaRepository pontoRepository;
     private final UsuarioRepository usuarioRepository;
     private final TransacaoMoedaRepository transacaoRepository;
+    private final EntregaQrRepository entregaQrRepository;
 
     public List<ProdutoResponse> listar() {
         return repository.listarSemImagem();
@@ -86,24 +91,33 @@ public class ProdutoService {
         Usuario quemCompra = compradorPrimeiro ? primeiro : segundo;
         Usuario quemVende = compradorPrimeiro ? segundo : primeiro;
 
-        if (quemCompra.getSaldoEcoMoedas().compareTo(preco) < 0) {
+        // Quem entregou material neste atelie tem um cupom de desconto por entrega
+        Optional<EntregaQr> cupom = entregaQrRepository.findFirstByUsuarioResgateIdAndPontoColetaIdAndDescontoDisponivelOrderByIdAsc(
+                quemCompra.getId(), produto.getAtelie().getId(), Boolean.TRUE);
+        BigDecimal valor = cupom.isPresent()
+                ? preco.multiply(ArtesaoService.multiplicadorDesconto()).setScale(2, RoundingMode.HALF_UP)
+                : preco;
+        String sufixoCupom = cupom.isPresent() ? " (cupom -" + ArtesaoService.INCENTIVO_PERCENTUAL + "%)" : "";
+
+        if (quemCompra.getSaldoEcoMoedas().compareTo(valor) < 0) {
             throw new BusinessException("Saldo insuficiente");
         }
-        quemCompra.setSaldoEcoMoedas(quemCompra.getSaldoEcoMoedas().subtract(preco));
-        quemVende.setSaldoEcoMoedas(quemVende.getSaldoEcoMoedas().add(preco));
+        quemCompra.setSaldoEcoMoedas(quemCompra.getSaldoEcoMoedas().subtract(valor));
+        quemVende.setSaldoEcoMoedas(quemVende.getSaldoEcoMoedas().add(valor));
+        cupom.ifPresent(e -> e.setDescontoDisponivel(Boolean.FALSE));
 
         String codigo = UUID.randomUUID().toString().replace("-", "").substring(0, 12).toUpperCase();
         transacaoRepository.save(TransacaoMoeda.builder()
                 .usuario(quemVende)
                 .tipo(TipoTransacao.VENDA)
-                .valor(preco)
-                .descricao(resumir("Venda: " + produto.getNome() + " (retirada " + codigo + ")"))
+                .valor(valor)
+                .descricao(resumir("Venda: " + produto.getNome() + " (retirada " + codigo + ")" + sufixoCupom))
                 .build());
         TransacaoMoeda compra = transacaoRepository.save(TransacaoMoeda.builder()
                 .usuario(quemCompra)
                 .tipo(TipoTransacao.COMPRA)
-                .valor(preco)
-                .descricao(resumir("Compra: " + produto.getNome() + " em " + produto.getAtelie().getNome()))
+                .valor(valor)
+                .descricao(resumir("Compra: " + produto.getNome() + sufixoCupom + " em " + produto.getAtelie().getNome()))
                 .codigoVoucher(codigo)
                 .build());
         return TransacaoResponse.builder()

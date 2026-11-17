@@ -44,6 +44,7 @@ public class CarteiraService {
                 .kgDesviados(kg == null ? BigDecimal.ZERO : kg)
                 .transacoes(transacaoRepository.findTop20ByUsuarioIdOrderByIdDesc(usuario.getId())
                         .stream().map(this::toResponse).toList())
+                .ateliesComDesconto(entregaQrRepository.ateliesComDesconto(usuario.getId(), Boolean.TRUE))
                 .build();
     }
 
@@ -91,6 +92,9 @@ public class CarteiraService {
         entrega.setDataResgate(LocalDateTime.now());
 
         boolean correto = Boolean.TRUE.equals(descarte.getDescarteCorreto());
+        boolean atelie = entrega.getPontoColeta().getArtesao() != null;
+        // Entrega correta em atelie vira cupom de desconto nos produtos de la (usado em ProdutoService)
+        entrega.setDescontoDisponivel(correto && atelie);
         BigDecimal moedas = correto ? converter(entrega) : BigDecimal.ZERO;
         if (correto) {
             usuario.setSaldoEcoMoedas(usuario.getSaldoEcoMoedas().add(moedas));
@@ -98,7 +102,8 @@ public class CarteiraService {
                     .usuario(usuario)
                     .tipo(TipoTransacao.CREDITO)
                     .valor(moedas)
-                    .descricao("Entrega de " + entrega.getQuantidadeKg() + " kg em " + descarte.getNomePontoColeta())
+                    .descricao("Entrega de " + entrega.getQuantidadeKg() + " kg em " + descarte.getNomePontoColeta()
+                            + (atelie ? " (bonus atelie +" + ArtesaoService.INCENTIVO_PERCENTUAL + "%)" : ""))
                     .build());
         }
         return ResgateResponse.builder()
@@ -108,6 +113,7 @@ public class CarteiraService {
                 .descarteCorreto(correto)
                 .moedasCreditadas(moedas)
                 .saldo(usuario.getSaldoEcoMoedas())
+                .descontoAtelie(correto && atelie)
                 .build();
     }
 
@@ -136,9 +142,13 @@ public class CarteiraService {
                 .build()));
     }
 
+    /** Moedas da entrega; no atelie de artesao rende o bonus de incentivo. */
     private BigDecimal converter(EntregaQr entrega) {
-        return entrega.getQuantidadeKg()
-                .multiply(entrega.getTipoResiduo().getMoedasPorKg())
+        BigDecimal moedas = entrega.getQuantidadeKg().multiply(entrega.getTipoResiduo().getMoedasPorKg());
+        if (entrega.getPontoColeta().getArtesao() != null) {
+            moedas = moedas.multiply(ArtesaoService.multiplicadorBonus());
+        }
+        return moedas
                 .setScale(2, RoundingMode.HALF_UP);
     }
 

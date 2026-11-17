@@ -76,6 +76,28 @@ class CarteiraServiceTest {
     }
 
     @Test
+    void entregaNoAtelieRendeBonusEGeraCupom() {
+        entrega.getPontoColeta().setArtesao(Usuario.builder().id(9L).username("bia").build());
+        descarteRetorna(true);
+
+        ResgateResponse r = service.resgatar("ana", "abc");
+
+        // 2,5 kg x 5 moedas = 12,50; +50% no atelie = 18,75
+        assertThat(r.getMoedasCreditadas()).isEqualByComparingTo("18.75");
+        assertThat(r.isDescontoAtelie()).isTrue();
+        assertThat(entrega.getDescontoDisponivel()).isTrue();
+    }
+
+    @Test
+    void descarteIncorretoNoAtelieNaoGeraCupom() {
+        entrega.getPontoColeta().setArtesao(Usuario.builder().id(9L).username("bia").build());
+        descarteRetorna(false);
+
+        assertThat(service.resgatar("ana", "abc").isDescontoAtelie()).isFalse();
+        assertThat(entrega.getDescontoDisponivel()).isFalse();
+    }
+
+    @Test
     void qrNaoPodeSerResgatadoDuasVezes() {
         entrega.setUsuarioResgate(usuario);
 
