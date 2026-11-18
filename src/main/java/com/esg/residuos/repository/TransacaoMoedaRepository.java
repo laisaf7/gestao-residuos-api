@@ -6,5 +6,5 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.List;
 
 public interface TransacaoMoedaRepository extends JpaRepository<TransacaoMoeda, Long> {
-    List<TransacaoMoeda> findTop20ByUsuarioIdOrderByIdDesc(Long usuarioId);
+    List<TransacaoMoeda> findTop20ByUsuarioIdOrderByDataTransacaoDescIdDesc(Long usuarioId);
 }

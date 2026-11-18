@@ -42,7 +42,7 @@ public class CarteiraService {
         return CarteiraResponse.builder()
                 .saldo(usuario.getSaldoEcoMoedas())
                 .kgDesviados(kg == null ? BigDecimal.ZERO : kg)
-                .transacoes(transacaoRepository.findTop20ByUsuarioIdOrderByIdDesc(usuario.getId())
+                .transacoes(transacaoRepository.findTop20ByUsuarioIdOrderByDataTransacaoDescIdDesc(usuario.getId())
                         .stream().map(this::toResponse).toList())
                 .ateliesComDesconto(entregaQrRepository.ateliesComDesconto(usuario.getId(), Boolean.TRUE))
                 .build();
