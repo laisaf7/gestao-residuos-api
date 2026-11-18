@@ -7,6 +7,7 @@ novembro de 2026 o banco é **PostgreSQL** (veja "Mudança de Oracle para Postgr
 
 É o backend do app Android [EcoCiclo](https://github.com/laisaf7/eco-ciclo), que
 transforma recicláveis entregues em ecopontos em EcoMoedas para gastar no comércio do bairro.
+Para ver a jornada sem instalar nada, use o protótipo navegável: https://eco-ciclo-web.vercel.app/.
 Documentação técnica (modelo de dados, regras e fluxos): [`docs/DOCUMENTACAO.md`](docs/DOCUMENTACAO.md).
 
 ## Funcionalidades
