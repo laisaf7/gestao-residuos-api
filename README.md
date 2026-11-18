@@ -5,8 +5,14 @@ Serviço RESTful em **Spring Boot 3 + Java 17**, desenvolvido para o tema ESG
 Oracle (DDL + triggers PL/SQL) entregue na fase anterior do projeto. Desde
 novembro de 2026 o banco é **PostgreSQL** (veja "Mudança de Oracle para PostgreSQL").
 
+É o backend do app Android [EcoCiclo](https://github.com/laisaf7/eco-ciclo), que
+transforma recicláveis entregues em ecopontos em EcoMoedas para gastar no comércio do bairro.
+Documentação técnica (modelo de dados, regras e fluxos): [`docs/DOCUMENTACAO.md`](docs/DOCUMENTACAO.md).
+
 ## Funcionalidades
 
+- **Carteira EcoCiclo:** QR Code da pesagem, conversão de kg em EcoMoedas, vouchers,
+  transferências para comércios e histórico (veja "Carteira EcoCiclo").
 - Rastreamento de coleta seletiva e descarte correto de resíduos.
 - Alertas automáticos (geração de coleta) quando um ponto atinge o limite de ocupação.
 - Notificações automáticas de destinação incorreta e de conclusão de coleta.
@@ -14,7 +20,7 @@ novembro de 2026 o banco é **PostgreSQL** (veja "Mudança de Oracle para Postgr
 - Artigos de reaproveitamento ("Ideias"): passo a passo para transformar recicláveis em
   produtos novos, com foto e filtro por material; qualquer usuário publica, o autor
   edita e exclui, o `ADMIN` modera (veja "Artigos de reaproveitamento").
-- Autenticação via **JWT** com Spring Security (perfis `ADMIN` e `USER`).
+- Autenticação via **JWT** com Spring Security (perfis `ADMIN`, `USER` e `ARTESAO`).
 - Validação de dados com Bean Validation e tratamento global de exceções.
 - Migrações de banco de dados com **Flyway**.
 - Banco de dados **PostgreSQL 16** (via Docker localmente; Neon na nuvem).
@@ -65,6 +71,37 @@ foram validados no PostgreSQL. O script original em Oracle continua em
 cron-job.org para o Render não "dormir". Variáveis no Render: `DB_URL`
 (formato `jdbc:postgresql://<host>/<banco>?sslmode=require`), `DB_USERNAME`,
 `DB_PASSWORD` e `JWT_SECRET`.
+
+## Carteira EcoCiclo
+
+Criada na `V4__ecociclo.sql`: coordenadas nos pontos, `MOEDAS_POR_KG` nos tipos de
+resíduo (papel 2, plástico 5, vidro 1,5, metal 8, demais 1), saldo no usuário e as
+tabelas `COMERCIO`, `ENTREGA_QR` e `TRANSACAO_MOEDA`.
+
+1. Na pesagem, `ADMIN` (ou o artesão, no próprio ateliê) chama `POST /api/entregas-qr`
+   com ponto, material e kg. O código é um UUID de uso único.
+2. O cidadão envia o código em `POST /api/carteira/resgates`. A API registra o descarte
+   (que soma os kg e atualiza a ocupação do ponto) e, se o material bate com o ponto,
+   credita `kg × MOEDAS_POR_KG` (+50% em ateliê) e grava uma transação `CREDITO`.
+3. `POST /api/carteira/pagamentos` debita o saldo como `VOUCHER` (código de 12 caracteres
+   para mostrar no caixa) ou `TRANSFERENCIA` (o valor vai para o comércio).
+4. `GET /api/carteira` devolve saldo, kg desviados e as 20 últimas transações, da mais
+   recente para a mais antiga (por `DATA_TRANSACAO`, desempate pelo id).
+
+`GET /api/pontos-coleta` devolve, em cada ponto, `moedasPorKg` do material aceito.
+
+### Dados de demonstração (novembro de 2026)
+
+| Migração | O quê |
+|---|---|
+| `V10__historico_demo.sql` | Cada conta ativa sem movimentações ganha entregas e um voucher, com valores diferentes por conta (3 perfis). Grava descarte, transação e saldo como numa entrega real, então o saldo é a soma do histórico |
+| `V11__codigos_demo.sql` | Coluna `DEMO` em `ENTREGA_QR` e os códigos `ECO-4821` (3 kg de plástico), `ECO-7310` (1,2 kg de metal) e `ATL-0550` (2 kg no ateliê), os mesmos do protótipo web |
+
+**Códigos de demonstração:** a cada leitura, `CarteiraService.resgatar` cria uma entrega
+nova com UUID e resgata essa cópia, então o código nunca fica marcado como usado e vale
+para qualquer conta. Por isso qualquer pessoa pode acumular moedas de demonstração com
+eles, e cada uso soma kg à ocupação do ponto (o ponto pode aparecer como "Cheio"; o
+artesão esvazia o ateliê pelo app).
 
 ## Artigos de reaproveitamento (novembro de 2026)
 
@@ -153,6 +190,10 @@ src/main/java/com/esg/residuos
 | GET | `/api/notificacoes` | USER/ADMIN | Lista notificações (filtro `?naoLidas=true`) |
 | PUT | `/api/notificacoes/{id}/marcar-lida` | ADMIN | Marca notificação como lida |
 | GET | `/api/indicadores-sustentabilidade` | USER/ADMIN | Indicadores ESG consolidados |
+| GET | `/api/carteira` | Logado | Saldo, kg desviados, últimas 20 transações e ateliês com cupom |
+| POST | `/api/carteira/resgates` | Logado | Resgata o código do QR e credita as EcoMoedas |
+| POST | `/api/carteira/pagamentos` | Logado | Gera voucher ou transfere EcoMoedas para um comércio |
+| GET | `/api/comercios` | Logado | Comércios parceiros |
 | POST | `/api/artesao` | USER | Vira artesão: cria o ateliê (corpo de ponto de coleta, até 100 kg) e devolve token novo |
 | GET | `/api/artesao/atelie` | ARTESAO | Ateliê de quem está logado (ocupação e status) |
 | POST | `/api/artesao/atelie/esvaziar` | ARTESAO | Zera a ocupação do ateliê |
@@ -217,7 +258,8 @@ Inclui teste de contexto Spring e testes unitários:
 - `DescarteServiceTest`: validação de descarte, notificação de destinação
   incorreta e geração automática de coleta ao cruzar o limite de ocupação.
 - `CarteiraServiceTest`: conversão de kg em EcoMoedas no resgate do QR, QR usado
-  duas vezes, descarte incorreto sem moedas, pagamento sem saldo e transferência.
+  duas vezes, código de demonstração reutilizável, descarte incorreto sem moedas,
+  pagamento sem saldo e transferência.
 - `ArtigoServiceTest`: autor do artigo, validação da foto (JPEG/Base64) e quem
   pode editar ou excluir (autor, outro usuário, admin).
 - `ArtesaoServiceTest`: cadastro troca o papel e cria o ateliê, limite de 100 kg,
