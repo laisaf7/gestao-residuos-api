@@ -19,6 +19,7 @@ public class PontoColetaResponse {
     private Long id;
     private Long idTipoResiduo;
     private String nomeTipoResiduo;
+    private BigDecimal moedasPorKg;
     private String nome;
     private String descricao;
     private String endereco;

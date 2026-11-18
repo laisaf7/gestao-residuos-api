@@ -101,6 +101,7 @@ public class PontoColetaService {
                 .id(p.getId())
                 .idTipoResiduo(p.getTipoResiduo().getId())
                 .nomeTipoResiduo(p.getTipoResiduo().getNome())
+                .moedasPorKg(p.getTipoResiduo().getMoedasPorKg())
                 .nome(p.getNome())
                 .descricao(p.getDescricao())
                 .endereco(p.getEndereco())
