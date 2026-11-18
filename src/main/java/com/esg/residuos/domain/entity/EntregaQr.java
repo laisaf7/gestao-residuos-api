@@ -54,4 +54,10 @@ public class EntregaQr {
     @Convert(converter = SimNaoConverter.class)
     @Column(name = "DESCONTO_DISPONIVEL", nullable = false, length = 1)
     private Boolean descontoDisponivel = Boolean.FALSE;
+
+    /** true = codigo de demonstracao (ex.: ECO-4821): vale para qualquer conta, quantas vezes quiser. */
+    @Builder.Default
+    @Convert(converter = SimNaoConverter.class)
+    @Column(name = "DEMO", nullable = false, length = 1)
+    private Boolean demo = Boolean.FALSE;
 }

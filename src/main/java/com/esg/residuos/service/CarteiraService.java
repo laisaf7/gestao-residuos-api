@@ -76,6 +76,15 @@ public class CarteiraService {
     public ResgateResponse resgatar(String username, String codigo) {
         EntregaQr entrega = entregaQrRepository.findForUpdateByCodigo(codigo)
                 .orElseThrow(() -> new ResourceNotFoundException("QR Code invalido"));
+        if (Boolean.TRUE.equals(entrega.getDemo())) {
+            // Codigo de demonstracao: cada leitura vira uma entrega nova, entao avaliadores podem repetir em qualquer conta
+            entrega = entregaQrRepository.save(EntregaQr.builder()
+                    .codigo(UUID.randomUUID().toString())
+                    .pontoColeta(entrega.getPontoColeta())
+                    .tipoResiduo(entrega.getTipoResiduo())
+                    .quantidadeKg(entrega.getQuantidadeKg())
+                    .build());
+        }
         if (entrega.getUsuarioResgate() != null) {
             throw new BusinessException("Este QR Code ja foi utilizado");
         }

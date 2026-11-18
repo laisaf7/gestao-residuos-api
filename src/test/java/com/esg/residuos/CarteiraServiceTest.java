@@ -98,6 +98,21 @@ class CarteiraServiceTest {
     }
 
     @Test
+    void codigoDemoPodeSerUsadoDeNovoSemSeGastar() {
+        entrega.setDemo(true);
+        entrega.setUsuarioResgate(usuario); // mesmo ja usado antes, continua valendo
+        when(entregaQrRepository.save(any(EntregaQr.class))).thenAnswer(i -> i.getArgument(0));
+        descarteRetorna(true);
+
+        ResgateResponse r = service.resgatar("ana", "abc");
+
+        assertThat(r.getMoedasCreditadas()).isEqualByComparingTo("12.50");
+        verify(entregaQrRepository).save(argThat(e -> !e.getDemo() && !"abc".equals(e.getCodigo())
+                && e.getUsuarioResgate() == usuario));
+        assertThat(entrega.getDemo()).isTrue(); // o codigo de demonstracao nao e consumido
+    }
+
+    @Test
     void qrNaoPodeSerResgatadoDuasVezes() {
         entrega.setUsuarioResgate(usuario);
 
